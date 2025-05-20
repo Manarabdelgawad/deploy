@@ -1,0 +1,28 @@
+# Python virtual environments
+venv/
+env/
+.env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables file
+.env
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Windows
+Thumbs.db
+
+# Project-specific directories
+space_junks/
+.vscode/
+# JSON files
+*.json

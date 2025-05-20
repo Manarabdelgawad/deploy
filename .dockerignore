@@ -1,0 +1,12 @@
+# .dockerignore
+.git
+__pycache__
+*.pyc
+*.pt
+*.onnx
+*.bin
+space_junks/
+venv/
+*.jpg
+*.png
+*.mp4
