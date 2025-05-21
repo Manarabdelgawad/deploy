@@ -6,67 +6,36 @@ from io import BytesIO
 from PIL import Image
 import os
 import gdown
-import logging
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Space Debris Detection API")
 
 # Load the YOLO model
-model_path = "train_yolo9_v1/weights/best.pt"  # Updated path with forward slashes
-model = None
-
-async def load_model():
-    global model
-    try:
-        # Download model from Google Drive if not present
-        if not os.path.exists(model_path):
-            logger.info(f"Model not found at {model_path}, attempting to download...")
-            os.makedirs(os.path.dirname(model_path), exist_ok=True)
-            model_url = os.getenv("MODEL_URL")
-            if not model_url:
-                raise ValueError("MODEL_URL environment variable is not set")
-            logger.info(f"Downloading model from {model_url}")
-            gdown.download(model_url, model_path, quiet=False)
-            
-        logger.info(f"Loading model from {model_path}")
-        model = YOLO(model_path)
-        logger.info("Model loaded successfully")
-    except Exception as e:
-        logger.error(f"Failed to load model: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")
-
-@app.on_event("startup")
-async def startup_event():
-    await load_model()
+model_path = "train_yolo9_v1/weights/best.pt"
+try:
+    # Download model from Google Drive if not present
+    if not os.path.exists(model_path):
+        os.makedirs(os.path.dirname(model_path), exist_ok=True)
+        model_url = os.getenv("MODEL_URL", "https://drive.google.com/file/d/1-ZQooR3SuDjenOzz6ZXjdNh7XdpUzlHo/view?usp=sharing")  # Replace with your Google Drive URL
+        if model_url == "https://drive.google.com/file/d/1-ZQooR3SuDjenOzz6ZXjdNh7XdpUzlHo/view?usp=sharing":
+            raise ValueError("Please set MODEL_URL environment variable or provide a valid Google Drive URL")
+        gdown.download(model_url, model_path, quiet=False)
+    model = YOLO(model_path)
+except Exception as e:
+    raise Exception(f"Failed to load model: {str(e)}")
 
 @app.post("/detect", summary="Detect space debris in an image and decide satellite movement")
 async def detect_objects(file: UploadFile = File(...)):
     try:
-        # Check if model is loaded
-        if model is None:
-            logger.error("Model not loaded")
-            raise HTTPException(status_code=500, detail="Model not loaded. Please try again later.")
-
         # Validate file type
         if not file.content_type.startswith("image/"):
-            logger.warning(f"Invalid file type: {file.content_type}")
             raise HTTPException(status_code=400, detail="File must be an image (PNG, JPEG, etc.)")
 
-        # Check file size (limit to 10MB)
+        # Read image from uploaded file
         contents = await file.read()
-        if len(contents) > 10 * 1024 * 1024:  # 10MB
-            logger.warning(f"File too large: {len(contents)} bytes")
-            raise HTTPException(status_code=400, detail="File size too large. Maximum size is 10MB")
-
-        logger.info("Processing image...")
         image = np.array(Image.open(BytesIO(contents)))
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert to BGR for OpenCV
 
         # Run detection
-        logger.info("Running object detection...")
         results = model(image)
         object_info = []
 
