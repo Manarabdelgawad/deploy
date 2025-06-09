@@ -1,7 +1,8 @@
-FROM python:3.9.16-slim
+FROM python:3.9-slim
 WORKDIR /app
 COPY requirements.txt .
-RUN apt-get update && apt-get install -y libgomp1 && pip install -r requirements.txt
+RUN apt-get update && apt-get install -y libgomp1 libsm6 libxext6 libxrender-dev && \
+    pip install --no-cache-dir -r requirements.txt
 COPY . .
-EXPOSE 10000
-CMD ["gunicorn", "--preload", "--timeout", "120", "-b", "0.0.0.0:10000", "app:app"]
+EXPOSE 80
+CMD ["gunicorn", "--preload", "--timeout", "120", "-w", "4", "-b", "0.0.0.0:80", "app:app"]

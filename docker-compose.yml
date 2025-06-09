@@ -1,4 +1,10 @@
 version: '3.8'
 services:
-  function:
+  app:
     build: .
+    ports:
+      - "80:80"
+    volumes:
+      - .:/app
+    environment:
+      - MODEL_PATH=train_yolo9_v1/weights/best.pt

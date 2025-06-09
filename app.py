@@ -5,37 +5,37 @@ from ultralytics import YOLO
 from io import BytesIO
 from PIL import Image
 import os
-import gdown
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Space Debris Detection API")
 
 # Load the YOLO model
 model_path = "train_yolo9_v1/weights/best.pt"
+
 try:
-    # Download model from Google Drive if not present
     if not os.path.exists(model_path):
-        os.makedirs(os.path.dirname(model_path), exist_ok=True)
-        model_url = os.getenv("MODEL_URL", "https://drive.google.com/file/d/1-ZQooR3SuDjenOzz6ZXjdNh7XdpUzlHo/view?usp=sharing")  # Replace with your Google Drive URL
-        if model_url == "https://drive.google.com/file/d/1-ZQooR3SuDjenOzz6ZXjdNh7XdpUzlHo/view?usp=sharing":
-            raise ValueError("Please set MODEL_URL environment variable or provide a valid Google Drive URL")
-        gdown.download(model_url, model_path, quiet=False)
+        logger.error(f"Model not found at {model_path}")
+        raise FileNotFoundError(f"Model file {model_path} not found. Ensure it’s in the repository.")
     model = YOLO(model_path)
+    logger.info("Model loaded successfully")
 except Exception as e:
+    logger.error(f"Failed to load model: {str(e)}")
     raise Exception(f"Failed to load model: {str(e)}")
 
 @app.post("/detect", summary="Detect space debris in an image and decide satellite movement")
 async def detect_objects(file: UploadFile = File(...)):
     try:
-        # Validate file type
         if not file.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="File must be an image (PNG, JPEG, etc.)")
 
-        # Read image from uploaded file
         contents = await file.read()
         image = np.array(Image.open(BytesIO(contents)))
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert to BGR for OpenCV
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        # Run detection
         results = model(image)
         object_info = []
 
@@ -48,7 +48,6 @@ async def detect_objects(file: UploadFile = File(...)):
                 center_x = (x1 + x2) / 2
                 center_y = (y1 + y2) / 2
 
-                # Determine position
                 horizontal_dir = "center"
                 if center_x < img_width / 3:
                     horizontal_dir = "left"
@@ -73,29 +72,30 @@ async def detect_objects(file: UploadFile = File(...)):
                     "position": position
                 })
 
-        # Decide satellite movement
         def decide_satellite_movement(objects):
             if not objects:
                 return "No objects detected, stay in position"
             for obj in objects:
-                if "left" in obj['position']:
+                if "left" in obj["position"]:
                     return "Move satellite right"
-                elif "right" in obj['position']:
+                elif "right" in obj["position"]:
                     return "Move satellite left"
             for obj in objects:
-                if obj['position'] == "center":
+                if obj["position"] == "center":
                     return "Move satellite slightly right"
             return "Stay in position"
 
         decision = decide_satellite_movement(object_info)
+        logger.info(f"Detection completed: {len(object_info)} objects, decision: {decision}")
 
         return {
             "objects": object_info,
             "decision": decision
         }
     except Exception as e:
+        logger.error(f"Error processing image: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 @app.get("/", summary="API root endpoint")
-async def root():
+def root():
     return {"message": "Space Debris Detection API"}
