@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Space Debris Detection API")
 
 # Load the YOLO model using environment variable
-model_path = os.getenv("MODEL_PATH", "train_yolo9_v1/weights/best.pt")
+model_path = os.getenv("MODEL_PATH", "best.pt")
 
 try:
     if not os.path.exists(model_path):
