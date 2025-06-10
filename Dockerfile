@@ -1,13 +1,15 @@
 FROM python:3.9-slim
 WORKDIR /app
 
-# First install system dependencies
+# Install system dependencies including OpenGL and GLib
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    libgomp1 \
+    libgl1 \
+    libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
+    libxrender1 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Ensure pip is up to date
@@ -20,8 +22,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Explicitly install gunicorn if not in requirements.txt
-RUN pip install --no-cache-dir gunicorn==21.2.0
-
 EXPOSE 80
-CMD ["gunicorn", "--preload", "--timeout", "120", "-w", "4", "-b", "0.0.0.0:80", "app:app"]
+CMD ["gunicorn", "--preload", "--timeout", "120", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:80", "app:app"]
