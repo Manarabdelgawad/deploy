@@ -1,25 +1,25 @@
 FROM python:3.9-slim
+
 WORKDIR /app
 
-# Install system dependencies including OpenGL
+# Install system dependencies for OpenCV and other libraries
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    libgomp1 \
+    libgl1 \
+    libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
-    libgl1-mesa-glx \
+    libxrender1 \
+    libgomp1 \
+    libgthread-2.0.so.0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Ensure pip is up to date
+# Upgrade pip and install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip
-
-# Install Python packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
 COPY . .
 
-EXPOSE 80
-CMD ["gunicorn", "--preload", "--timeout", "120", "-w", "4", "-b", "0.0.0.0:80", "app:app"]
+# Command to run the application (adjust as needed)
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
