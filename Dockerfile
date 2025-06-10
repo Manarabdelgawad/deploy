@@ -20,8 +20,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Explicitly install gunicorn if not in requirements.txt
-RUN pip install --no-cache-dir gunicorn==21.2.0
-
 EXPOSE 80
 CMD ["gunicorn", "--preload", "--timeout", "120", "-w", "4", "-b", "0.0.0.0:80", "app:app"]
