@@ -4,6 +4,6 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./train_yolo9_v1/weights:/app/train_yolo9_v1/weights
+      - ./best.pt:/app/best.pt  # Mounting just the model file
     environment:
-      - MODEL_PATH=train_yolo9_v1/weights/best.pt
+      - MODEL_PATH=/app/best.pt  # Updated path to the model
