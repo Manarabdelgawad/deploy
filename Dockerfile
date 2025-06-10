@@ -1,13 +1,14 @@
 FROM python:3.9-slim
 WORKDIR /app
 
-# First install system dependencies
+# Install system dependencies including OpenGL
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libgomp1 \
     libsm6 \
     libxext6 \
     libxrender-dev \
+    libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
 # Ensure pip is up to date
